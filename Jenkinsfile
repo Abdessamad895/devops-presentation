@@ -1,9 +1,8 @@
 pipeline {
     agent any 
     
-    tools{
-        jdk 'JDK21'
-        maven 'Maven3'
+    tools{ 
+        maven '<maven_name>'
     }
     
     stages{
@@ -16,51 +15,49 @@ pipeline {
         
         stage("Build"){
             steps {
-                sh "mvn clean package"
+                bat "mvn clean package"
             }
         }
         
         stage("Sonarqube Analysis "){
             steps{
-                sh """
-                    mvn sonar:sonar -Dsonar.url=http://localhost:9000/ -Dsonar.login=squ_72258a66a1bdd1e1e12c47858ca2d253ceb758ad -Dsonar.projectName=Devops \
+                bat """
+                    mvn sonar:sonar -Dsonar.url=http://localhost:9000/ -Dsonar.login=<sonarqube_token> -Dsonar.projectName=Devops \
                     -Dsonar.java.binaries=. \
                     -Dsonar.projectKey=Devops
                 """
             }
         }
-        // stage("Docker build "){
-        //     steps{
-        //         bat "docker build -t devopspresentation/myapp:latest ."
-        //     }
-        // }
         
         stage("Docker login"){
             steps {
-                withCredentials([string(credentialsId: 'dockerpresentation', variable: 'dockerhubpwd')]) {
-                    sh "docker login -u dockerpresentation -p ${dockerhubpwd}"
+                withCredentials([string(credentialsId: '<variable_id>', variable: '<variable_name>')]) {
+                    bat "docker login -u <username_docker_account> -p ${<variable_name>}"
                 }
+            }
+        } 
+        
+        stage("Docker build"){
+            steps {
+                 bat "docker build -t <app_name> ."
             }
         }
         
         stage("Docker push"){
             steps {
-                 sh """ 
-                        docker tag devopspresentation/myapp:latest dockerpresentation/myapp 
-                        docker push dockerpresentation/myapp
-                    """ 
+                 bat "docker push <username_docker_account>/<app_name>" 
             }
         }
         
         stage("Docker run"){
             steps {
-                 sh """
-                        docker stop myapp 
-                        docker rm myapp 
-                        docker run --name myapp -d -p 8000:8080 dockerpresentation/myapp  
+                 bat """
+                      docker stop <username_docker_account>/<app_name> 
+                      docker rm <username_docker_account>/<app_name> 
+                      docker run --name <app_name> -d -p 8000:8080 <username_docker_account>/<app_name> 
                     """ 
             }
         }
-        
-    }
+        
+    }
 }
